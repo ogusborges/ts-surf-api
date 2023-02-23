@@ -1,6 +1,4 @@
-import {
-  StormGlass, StormGlassClientResponseError
-} from '@src/clients/stormGlass';
+import { StormGlass } from '@src/clients/stormGlass';
 import stormGlassWeather3HoursFixture from '@test/fixtures/stormglass_weather_3_hours.json';
 import stormGlassWeather3HoursNormalizedFixture from '@test/fixtures/stormglass_weather_3_hours_normalized.json';
 import axios from 'axios';

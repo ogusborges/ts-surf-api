@@ -1,4 +1,4 @@
-import { AxiosStatic } from 'axios';
+import { AxiosStatic, AxiosError } from 'axios';
 import { InternalError } from '@src/util/errors/internalError';
 
 export interface StormGlassPointSource {
@@ -82,17 +82,20 @@ export class StormGlass {
       );
 
       return this.normalizeResponse(response.data);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      // Para acessar as propriedades do erro, o Typescript exige que o erro
-      // seja tipado com any, o que exige que desativemos o warning eslint/no-explicit-any.
-      if (err?.response?.status) {
-        throw new StormGlassClientResponseError(
-          `Error ${JSON.stringify(err.response.data)} Code ${err.response.status}`
-        );
+    } catch (err: unknown) {
+      if (err instanceof AxiosError) {
+        if (err?.response?.status) {
+          throw new StormGlassClientResponseError(
+            `Error ${JSON.stringify(err.response.data)} Code ${
+              err.response.status
+            }`
+          );
+        }
+
+        throw new StormGlassClientRequestError(err.message);
       }
 
-      throw new StormGlassClientRequestError(err.message);
+      throw InternalError;
     }
   }
 
