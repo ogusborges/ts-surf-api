@@ -1,4 +1,5 @@
 import { AxiosStatic } from 'axios';
+import { InternalError } from '@src/util/errors/internalError';
 
 export interface StormGlassPointSource {
   [key: string]: number;
@@ -30,6 +31,24 @@ export interface ForecastPoint {
   readonly windSpeed: number;
 }
 
+export class StormGlassClientRequestError extends InternalError {
+  constructor(message: string) {
+    const internalMessage =
+      'Unexpected error when querying StormGlass API service';
+
+    super(`${internalMessage}: ${message}`);
+  }
+}
+
+export class StormGlassClientResponseError extends InternalError {
+  constructor(message: string) {
+    const internalMessage =
+      'Unexpected error returned by the StormGlass API Service';
+
+    super(`${internalMessage}: ${message}`);
+  }
+}
+
 export class StormGlass {
   readonly stormGlassAPIParams: string =
     'swellDirection,swellHeight,swellPeriod,waveDirection,waveHeight,windDirection,windSpeed';
@@ -53,15 +72,28 @@ export class StormGlass {
       Authorization: 'fake-token',
     };
 
-    const response = await this.request.get<StormGlassAPIResponse>(
-      'https://api.stormglass.io/v2/weather/point',
-      {
-        params,
-        headers,
-      }
-    );
+    try {
+      const response = await this.request.get<StormGlassAPIResponse>(
+        'https://api.stormglass.io/v2/weather/point',
+        {
+          params,
+          headers,
+        }
+      );
 
-    return this.normalizeResponse(response.data);
+      return this.normalizeResponse(response.data);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      // Para acessar as propriedades do erro, o Typescript exige que o erro
+      // seja tipado com any, o que exige que desativemos o warning eslint/no-explicit-any.
+      if (err?.response?.status) {
+        throw new StormGlassClientResponseError(
+          `Error ${JSON.stringify(err.response.data)} Code ${err.response.status}`
+        );
+      }
+
+      throw new StormGlassClientRequestError(err.message);
+    }
   }
 
   private normalizePoint(point: StormGlassPoint): ForecastPoint {
