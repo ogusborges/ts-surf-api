@@ -61,7 +61,7 @@ describe('StormGlass client', () => {
     const response = stormGlass.fetchPoints(lat, lng);
 
     expect(response).rejects.toThrow(
-      'Unexpected error when querying StormGlass API service: {"message":"Network Error"}'
+      'Unexpected error when querying StormGlass API service: Network Error'
     );
   });
 
