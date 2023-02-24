@@ -1,5 +1,15 @@
-import { AxiosStatic, AxiosError } from 'axios';
+import { AxiosStatic } from 'axios';
 import { InternalError } from '@src/util/errors/internalError';
+import config from 'config';
+
+interface StormGlassResourceConfig {
+  readonly apiUrl: string;
+  readonly apiToken: string;
+}
+
+const stormGlassResourceConfig = config.get<StormGlassResourceConfig>(
+  'App.resources.StormGlass'
+);
 
 export interface StormGlassPointSource {
   [key: string]: number;
@@ -69,12 +79,12 @@ export class StormGlass {
     };
 
     const headers = {
-      Authorization: 'fake-token',
+      Authorization: stormGlassResourceConfig.apiToken,
     };
 
     try {
       const response = await this.request.get<StormGlassAPIResponse>(
-        'https://api.stormglass.io/v2/weather/point',
+        `${stormGlassResourceConfig.apiUrl}/weather/point`,
         {
           params,
           headers,
@@ -82,20 +92,17 @@ export class StormGlass {
       );
 
       return this.normalizeResponse(response.data);
-    } catch (err: unknown) {
-      if (err instanceof AxiosError) {
-        if (err?.response?.status) {
-          throw new StormGlassClientResponseError(
-            `Error ${JSON.stringify(err.response.data)} Code ${
-              err.response.status
-            }`
-          );
-        }
-
-        throw new StormGlassClientRequestError(err.message);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      // Para acessar as propriedades do erro, o Typescript exige que o erro
+      // seja tipado com any, o que exige que desativemos o warning eslint/no-explicit-any.
+      if (err?.response?.status) {
+        throw new StormGlassClientResponseError(
+          `Error ${JSON.stringify(err.response.data)} Code ${err.response.status}`
+        );
       }
 
-      throw InternalError;
+      throw new StormGlassClientRequestError(err.message);
     }
   }
 
